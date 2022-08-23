@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
+from fadiga1 import F, Se_linha
+
 b = 2
 d = 1
 D = 1.125
@@ -19,22 +21,36 @@ print("l = ", l, "in")
 
 #Aço SAE 1040
 Sut = 80000
+Sy = 60000
 print("Sut = ", Sut, "psi")
+print("Sy = ", Sy, "psi")
 E = 3e7
 print("E = ", E)
 print("\n")
 
-F = 500 #lb
-print("F = ", F, "lb")
-R = 500 #lb
-print("R = ", R, "lb")
-M = R*l - F*(l-a)
-print("M = ",M," lb*in")
-I = (b*d**3)/12
-print("I = ",I," in^4")
-c = d/2 
-sigma_a_nom = M*c/I
-print("sigma_a_nom = ",sigma_a_nom," psi")
+Fmax = 1100
+Fmin = 100
+Fm = (Fmax + Fmin)/2
+Fa = (Fmax - Fmin)/2
+print("Fm = ", Fm, "lb")
+print("Fa = ", Fa, "lb")
+Ra = Fa
+Rm = Fm
+Rmax = Fmax
+Ma = Ra*l - Fa*(l-a)
+Mm = Rm*l - Fm*(l-a)
+Mmax = Rmax*l - Fmax*(l-a)
+print("Ma = ", Ma, "lb*in")
+print("Mm = ", Mm, "lb*in")
+print("Mmax = ", Mmax, "lb*in")
+I = (b*(d**3))/12
+print("I = ", I, "in^4")
+c = d/2
+sigma_a_nom = Ma*c/I
+sigma_m_nom = Mm*c/I
+sigma_max = Mmax*c/I
+print("sigma_a_nom = ", sigma_a_nom, "psi")
+print("sigma_m_nom = ", sigma_m_nom, "psi")
 
 D_d_k  = np.array([3, 2, 1.3, 1.2, 1.1, 1.05])
 A_k = np.array([0.90720, 0.93232, 0.95880, 0.99590, 1.01650, 1.02260])
@@ -60,24 +76,28 @@ print("q = ",q)
 
 Kf = 1 + q*(Kt - 1)
 print("Kf = ",Kf)
+if Kf*np.abs(sigma_max) < Sy:
+    Kfm = Kf
+if Kf*np.abs(sigma_max) > Sy:
+    Kfm = (Sy - Kf*sigma_a_nom)/(np.abs(sigma_m_nom))
+print("Kfm = ",Kfm)
+
 sigma_a = Kf*sigma_a_nom
-print("sigma_a = ",sigma_a, "psi")
-sigma_x = sigma_a
-sigma_y = 0
-tau_xy = 0
-tau_ab = np.sqrt(((sigma_x+sigma_y)/2)**2 + tau_xy**2)
-print("tau_ab = ",tau_ab, "psi")
-sigma1_a = (sigma_x+sigma_y)/2 + tau_ab
-sigma2_a = 0
-sigma3_a = (sigma_x+sigma_y)/2 - tau_ab
-sigma_vm = np.sqrt(sigma1_a**2 - sigma1_a*sigma2_a + sigma2_a**2)
-print("sigma_vm = ",sigma_vm, "psi")
+sigma_ay = 0
+sigma_m = Kfm*sigma_m_nom
+sigma_my = 0
+tau_axy = 0
+tau_mxy = 0
+sigma_a_vm = np.sqrt(sigma_a**2 + sigma_ay**2 - sigma_a*sigma_ay + 3*(tau_axy**2))
+sigma_m_vm = np.sqrt(sigma_m**2 + sigma_my**2 - sigma_m*sigma_my + 3*(tau_mxy**2))
+print("sigma_a_vm = ", sigma_a_vm, "psi")
+print("sigma_m_vm = ", sigma_m_vm, "psi")
 
 if Sut < 200000:
     Se_linha = 0.5*Sut
 if Sut > 200000:
     Se_linha = 100000
-print("Se_linha = ",Se_linha, "psi")
+print("Se_linha = ", Se_linha, "psi")
 A95 = 0.05*d*b
 print("A95 = ",A95, "in²")
 d_equi = np.sqrt(A95/0.0766)
@@ -87,7 +107,6 @@ if d < 0.3:
 if d > 0.3 and d < 10:
     C_tamanho = 0.869*(d_equi)**(-0.097)
 print("C_tamanho = ",C_tamanho)
-
 C_carreg = 1  # 6.7a 1 = flexão  0.70 = força normal
 print("C_carreg = ",C_carreg)
 C_superf = 2.7*(Sut/1000)**(-0.265) # 6.7e Usinado a frio A = 2,7  b = –0,265
@@ -104,11 +123,20 @@ C_conf_interp = interpolate.interp1d(Conf_i, C_conf_i, 'linear')
 Conf = 99.9
 C_conf = C_conf_interp(Conf)
 print("C_conf = ",C_conf)
-
 Se = C_carreg*C_tamanho*C_superf*C_temp*C_conf*Se_linha
 print("Se = ", Se, "psi")
-Nf = Se/sigma_vm
-print("Nf = ", Nf)
 
-y = (F/(6*E*I))*(l**3 - 3*a*(l**2) - (l - a)**3)
-print("Y = ", y, "in")
+sigma_m_vm_Q = (1 - (sigma_a_vm/Sy))*Sy
+Nf1 = sigma_m_vm_Q/sigma_m_vm
+print("Nf1 = ", Nf1) 
+sigma_a_vm_P = (1 - (sigma_m_vm/Sut))*Se
+Nf2 = sigma_a_vm_P/sigma_a_vm
+print("Nf2 = ", Nf2)
+Nf3 = (Se*Sut)/(sigma_a_vm*Sut + sigma_m_vm*Se)
+print("Nf3 = ", Nf3)
+sigma_m_vm_S = (Sut*(Se**2 - Se*sigma_a_vm + Sut*sigma_m_vm))/(Se**2 + Sut**2)
+sigma_a_vm_S = -(Se/Sut)*sigma_m_vm_S + Se
+ZS = np.sqrt((sigma_m_vm - sigma_m_vm_S)**2 + (sigma_a_vm - sigma_a_vm_S)**2)
+OZ = np.sqrt((sigma_a_vm)**2 + (sigma_m_vm)**2)
+Nf4 = (OZ + ZS)/OZ
+print("Nf4 = ", Nf4)
