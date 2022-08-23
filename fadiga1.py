@@ -4,19 +4,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-b = 1 #in
-d = 0.75 #in
-D = 0.938 #In
-r = 0.25 #In
-a = 5 #in
-l = 6 #in
+b = 2
+print("b = ", b, "in")
+d = 1
+print("d = ", d, "in")
+D = 1.125
+print("D = ", D, "in")
+r = 0.5
+print("r = ", r, "in")
+a = 5
+print("a = ", a, "in")
+l = 6
+print("l = ", l, "in")
 
 #Aço SAE 1040
-Sut = 80000 #psi
+Sut = 80000
+print("Sut = ", Sut, "psi")
+E = 3e7
+print("E = ", E)
+print("\n")
 
 F = 500 #lb
+print("F = ", F, "lb")
 R = 500 #lb
-M = R*l - F*(l-a) #lb-in
+print("R = ", R, "lb")
+M = R*l - F*(l-a)
 print("M = ",M," lb*in")
 I = (b*d**3)/12
 print("I = ",I," in^4")
@@ -52,23 +64,51 @@ print("q = ",q)
 Kf = 1 + q*(Kt - 1)
 print("Kf = ",Kf)
 sigma_a = Kf*sigma_a_nom
-print("sigma_a = ",sigma_a)
+print("sigma_a = ",sigma_a, "psi")
 sigma_x = sigma_a
 sigma_y = 0
 tau_xy = 0
 tau_ab = np.sqrt(((sigma_x+sigma_y)/2)**2 + tau_xy**2)
-print("tau_ab = ",tau_ab)
+print("tau_ab = ",tau_ab, "psi")
 sigma1_a = (sigma_x+sigma_y)/2 + tau_ab
 sigma2_a = 0
 sigma3_a = (sigma_x+sigma_y)/2 - tau_ab
 sigma_vm = np.sqrt(sigma1_a**2 - sigma1_a*sigma2_a + sigma2_a**2)
-print("sigma_vm = ",sigma_vm)
+print("sigma_vm = ",sigma_vm, "psi")
 
-Se = 0.5*Sut
+Se_linha = 0.5*Sut
+print("Se_linha = ",Se_linha, "psi")
 A95 = 0.05*d*b
+print("A95 = ",A95, "in²")
 d_equi = np.sqrt(A95/0.0766)
+print("d_equi = ",d_equi, "in")
 if d < 0.3:
     C_tamanho = 1
 if d > 0.3 and d < 10:
     C_tamanho = 0.869*(d_equi)**(-0.097)
 print("C_tamanho = ",C_tamanho)
+
+C_carreg = 1  # 6.7a 1 = flexão  0.70 = força normal
+print("C_carreg = ",C_carreg)
+C_superf = 2.7*(Sut/1000)**(-0.265) # 6.7e Usinado a frio A = 2,7  b = –0,265
+print("C_superf = ",C_superf)
+T = 28  # 6.7f
+if T < 450:
+    C_temp = 1
+if T > 450 and T < 550:
+    C_temp = 1 - 0.0058*(T - 450)
+print("C_temp = ",C_temp)
+Conf_i = [50, 90, 95, 99, 99.9, 99.99, 99.999, 99.9999]
+C_conf_i = [1, 0.897, 0.868, 0.814, 0.753, 0.702, 0.659, 0.620]
+C_conf_interp = interpolate.interp1d(Conf_i, C_conf_i, 'linear')
+Conf = 99.9
+C_conf = C_conf_interp(Conf)
+print("C_conf = ",C_conf)
+
+Se = C_carreg*C_tamanho*C_superf*C_temp*C_conf*Se_linha
+print("Se = ", Se, "psi")
+Nf = Se/sigma_vm
+print("Nf = ", Nf)
+
+y = (F/(6*E*I))*(l**3 - 3*a*(l**2) - (l - a)**3)
+print("Y = ", y, "in")
