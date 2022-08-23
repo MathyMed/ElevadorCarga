@@ -72,3 +72,4 @@ if d < 0.3:
 if d > 0.3 and d < 10:
     C_tamanho = 0.869*(d_equi)**(-0.097)
 print(C_tamanho)
+print("olá :)")
