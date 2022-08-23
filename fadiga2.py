@@ -7,8 +7,8 @@ from scipy import interpolate
 from fadiga1 import F, Se_linha
 
 b = 2
-d = 1
-D = 1.125
+d = 1.2
+D = 1.4
 r = 0.5
 a = 5
 l = 6
@@ -140,3 +140,6 @@ ZS = np.sqrt((sigma_m_vm - sigma_m_vm_S)**2 + (sigma_a_vm - sigma_a_vm_S)**2)
 OZ = np.sqrt((sigma_a_vm)**2 + (sigma_m_vm)**2)
 Nf4 = (OZ + ZS)/OZ
 print("Nf4 = ", Nf4)
+
+y = (Fmax/(6*E*I))*(l**3 - 3*a*(l**2) - (l - a)**3)
+print("Y = ", y, "in")
