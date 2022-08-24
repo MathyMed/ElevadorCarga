@@ -19,8 +19,8 @@ print("l = ", l, "in")
 
 #Aço SAE 1040
 Sut = 80000
-print("Sut = ", Sut, "psi")
 E = 3e7
+print("Sut = ", Sut, "psi")
 print("E = ", E)
 print("\n")
 

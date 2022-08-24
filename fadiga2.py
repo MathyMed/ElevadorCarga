@@ -4,8 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-from fadiga1 import F, Se_linha
-
 b = 2
 d = 1.2
 D = 1.4
@@ -22,9 +20,9 @@ print("l = ", l, "in")
 #Aço SAE 1040
 Sut = 80000
 Sy = 60000
+E = 3e7
 print("Sut = ", Sut, "psi")
 print("Sy = ", Sy, "psi")
-E = 3e7
 print("E = ", E)
 print("\n")
 
